@@ -49,6 +49,23 @@ export async function GET() {
     steps.prismaUserCount = { error: String((e as Error)?.message), stack: (e as Error)?.stack };
   }
 
+  steps.supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? null;
+  steps.bucketName = process.env.SUPABASE_STORAGE_BUCKET ?? "(default) event-photos";
+  steps.serviceKeyLen = process.env.SUPABASE_SERVICE_ROLE_KEY?.length ?? 0;
+
+  try {
+    const { supabaseAdmin, storageBucket } = await import("@/lib/supabase");
+    const admin = supabaseAdmin();
+    const { data: buckets, error: listErr } = await admin.storage.listBuckets();
+    steps.listBuckets = listErr
+      ? { error: listErr.message }
+      : (buckets ?? []).map((b) => b.name);
+    const { data: got, error: getErr } = await admin.storage.getBucket(storageBucket());
+    steps.getBucket = getErr ? { error: getErr.message } : { name: got?.name, public: got?.public };
+  } catch (e) {
+    steps.bucketProbe = { error: String((e as Error)?.message) };
+  }
+
   try {
     const { prisma } = await import("@/lib/prisma");
     const { signedUrls } = await import("@/lib/supabase");
