@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+        env:
+          JWT_SECRET: ci-secret-ci-secret-ci-secret-1234567890
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key-ci-service-role-key
+          DATABASE_URL: postgresql://user:pass@localhost:5432/ci
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: framelink
+          POSTGRES_PASSWORD: framelink
+          POSTGRES_DB: framelink_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U framelink"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Push schema to test DB
+        run: npx prisma db push --skip-generate
+        env:
+          DATABASE_URL: postgresql://framelink:framelink@localhost:5432/framelink_test
+      - name: Integration tests
+        run: npm test
+        env:
+          TEST_DATABASE_URL: postgresql://framelink:framelink@localhost:5432/framelink_test
+          JWT_SECRET: ci-secret-ci-secret-ci-secret-1234567890
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key-ci-service-role-key

@@ -1,0 +1,42 @@
+# Local full stack: FrameLink app + Postgres.
+# Object storage still uses Supabase — set the two SUPABASE_* vars in .env.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: framelink
+      POSTGRES_PASSWORD: framelink
+      POSTGRES_DB: framelink
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U framelink"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://framelink:framelink@db:5432/framelink
+      DIRECT_URL: postgresql://framelink:framelink@db:5432/framelink
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-event-photos}
+      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-local-dev-secret-123456}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "npx prisma migrate deploy && node server.js"
+
+volumes:
+  db_data:

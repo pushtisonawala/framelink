@@ -1,0 +1,157 @@
+// FrameLink — Prisma schema
+// Postgres (Supabase). Photo binaries live in Supabase Storage; only metadata here.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  TEAM_MEMBER
+}
+
+enum PhotoStatus {
+  PENDING // storage upload started, not yet confirmed
+  READY // upload confirmed, thumbnail generated
+  FAILED // upload failed / abandoned
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(TEAM_MEMBER)
+  // Team members added by an admin get a one-time password they must change.
+  mustChangePassword Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  eventsCreated   Event[]        @relation("EventCreatedBy")
+  memberships     EventMember[]
+  photosUploaded  Photo[]        @relation("PhotoUploadedBy")
+  galleriesCreated Gallery[]     @relation("GalleryCreatedBy")
+
+  @@index([role])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  date        DateTime?
+  createdById String
+  createdBy   User     @relation("EventCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members   EventMember[]
+  photos    Photo[]
+  galleries Gallery[]
+
+  @@index([createdById])
+}
+
+// Join table: which users may work on which events.
+model EventMember {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addedAt   DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@index([userId])
+}
+
+model Photo {
+  id           String      @id @default(cuid())
+  eventId      String
+  uploadedById String
+  event        Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  uploadedBy   User        @relation("PhotoUploadedBy", fields: [uploadedById], references: [id])
+
+  filename     String // original client filename
+  storageKey   String  @unique // object key in the storage bucket
+  thumbnailKey String? // object key of the generated thumbnail
+  mimeType     String
+  fileSize     Int // bytes
+  width        Int?
+  height       Int?
+  status       PhotoStatus @default(PENDING)
+  // Whether the admin has marked this photo as a candidate for the gallery.
+  selected     Boolean     @default(false)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  galleryPhotos GalleryPhoto[]
+
+  @@index([eventId])
+  @@index([uploadedById])
+  @@index([eventId, selected])
+  @@index([eventId, status])
+}
+
+model Gallery {
+  id          String    @id @default(cuid())
+  eventId     String
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User      @relation("GalleryCreatedBy", fields: [createdById], references: [id])
+
+  title       String
+  // URL-safe public identifier used in the shareable link: /gallery/<slug>
+  slug        String    @unique
+  // bcrypt hash of the numeric PIN — the raw PIN is never stored.
+  pinHash     String
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  // Optional automatic expiry for the shareable link.
+  expiresAt   DateTime?
+  // Allow customers to download full-resolution originals.
+  allowDownload Boolean @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  photos       GalleryPhoto[]
+  accessLogs   GalleryAccessLog[]
+
+  @@index([eventId])
+  @@index([slug])
+}
+
+// Snapshot of which photos belong to a published gallery, with display order.
+model GalleryPhoto {
+  id        String  @id @default(cuid())
+  galleryId String
+  photoId   String
+  gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  photo     Photo   @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  order     Int     @default(0)
+
+  @@unique([galleryId, photoId])
+  @@index([galleryId, order])
+}
+
+// Audit + rate-limiting source for PIN attempts on public galleries.
+model GalleryAccessLog {
+  id        String   @id @default(cuid())
+  galleryId String
+  gallery   Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  success   Boolean
+  ipHash    String // sha-256 of client IP + salt, never the raw IP
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([galleryId, createdAt])
+  @@index([ipHash, createdAt])
+}
