@@ -33,7 +33,13 @@ let cached: ServerEnv | null = null;
 
 export function getEnv(): ServerEnv {
   if (cached) return cached;
-  const parsed = serverSchema.safeParse(process.env);
+  // Treat empty-string env vars as unset. Hosting platforms (Vercel included)
+  // can surface a declared-but-blank variable as "", which would otherwise
+  // fail validation instead of falling back to the schema default.
+  const raw = Object.fromEntries(
+    Object.entries(process.env).map(([k, v]) => [k, v === "" ? undefined : v]),
+  );
+  const parsed = serverSchema.safeParse(raw);
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
