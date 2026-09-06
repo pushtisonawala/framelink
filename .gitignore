@@ -48,3 +48,9 @@ yarn-error.log*
 # uploads (local dev fallback)
 /tmp
 /uploads
+
+# curl cookie jars from manual testing
+cj.txt
+gj.txt
+mj.txt
+*.cookiejar
