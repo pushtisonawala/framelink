@@ -6,8 +6,8 @@ shareable link — no account required.
 
 Built for the TrizenAI Full-Stack Internship take-home.
 
-> **Live app:** _<add your Vercel URL>_
-> **Demo gallery:** _<add gallery URL>_ · **PIN:** `482917`
+> **Live app:** https://framelink-hazel.vercel.app
+> **Demo gallery:** https://framelink-hazel.vercel.app/gallery/psd5tyhqqsvz · **PIN:** `482917`
 > **Demo credentials:** see [Demo accounts](#demo-accounts)
 
 ---

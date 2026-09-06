@@ -4,15 +4,15 @@ Email everything below to **talent@trizen-ai.com** before **Sep 20, 2026, 11:59 
 
 | Deliverable | Status | Link / value |
 |---|---|---|
-| **Source code repository** | ✅ in repo | _<GitHub URL>_ |
-| **Live application URL** | ⬜ deploy | _<Vercel URL>_ |
+| **Source code repository** | ✅ | https://github.com/pushtisonawala/framelink |
+| **Live application URL** | ✅ | https://framelink-hazel.vercel.app |
 | **README** (overview, stack, architecture, DB, setup, env, deploy, limitations) | ✅ | [`README.md`](README.md) |
 | **Architecture / DB explanation** | ✅ | [`docs/architecture.md`](docs/architecture.md) (mermaid diagrams) |
 | **Demo Admin credentials** | ✅ seed | `admin@framelink.demo` / `AdminDemo123!` |
 | **Demo Team Member credentials** | ✅ seed | `sam@framelink.demo` / `MemberDemo123!` · `kavya@framelink.demo` / `MemberDemo123!` |
-| **Demo Gallery URL + PIN** | ⬜ from seed output | _<gallery URL>_ · PIN `482917` |
+| **Demo Gallery URL + PIN** | ✅ | https://framelink-hazel.vercel.app/gallery/psd5tyhqqsvz · PIN `482917` |
 | **Tests** | ✅ | `npm test` — 34 passing (auth, authz, validation, gallery guards, rate-limit) + skippable DB integration test |
-| **Deployment** | ⬜ | Vercel + Supabase — steps in README |
+| **Deployment** | ✅ | Vercel (app) + Supabase (Postgres + Storage) |
 
 ## Before you submit
 
