@@ -9,11 +9,14 @@ function cookieName(slug: string): string {
 
 export async function grantGalleryAccess(galleryId: string, slug: string): Promise<void> {
   const token = await signGalleryAccess({ gid: galleryId, slug });
+  // Path is "/" so the browser also sends it to the `/api/gallery/<slug>/*`
+  // routes (a `/gallery/<slug>` path would exclude them). Scoping is still
+  // tight: the cookie name carries the slug and the JWT is verified against it.
   cookies().set(cookieName(slug), token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: `/gallery/${slug}`,
+    path: "/",
     maxAge: getEnv().GALLERY_SESSION_TTL_SECONDS,
   });
 }

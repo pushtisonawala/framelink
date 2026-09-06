@@ -221,7 +221,7 @@ The spec's five scenarios and how each is handled:
 | **An incorrect gallery PIN** | bcrypt compare → **401**. Sliding-window rate limit per `(galleryId, ipHash)` → **429** with `Retry-After` after N failures. Every attempt logged. |
 | **Access to unpublished / not-selected photos** | Public photo route only reads from `gallery_photos` of a **published, unexpired** gallery, and only with a valid slug-scoped cookie. Unpublished ⇒ 404. Original object keys are never exposed — only short-lived signed URLs. |
 
-Additional measures: `httpOnly` + `secure` + `sameSite=lax` cookies; gallery cookie scoped to its own path; security headers (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`) in `next.config.mjs`; Zod validation on all input; `poweredByHeader: false`; secrets only in server env, never shipped to the client; `robots.ts` disallows indexing of galleries and the app.
+Additional measures: `httpOnly` + `secure` + `sameSite=lax` cookies; the gallery access cookie is named per-slug and carries a JWT bound to that slug (a token for one gallery can't unlock another); security headers (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`) in `next.config.mjs`; Zod validation on all input; `poweredByHeader: false`; secrets only in server env, never shipped to the client; `robots.ts` disallows indexing of galleries and the app.
 
 ---
 

@@ -123,7 +123,7 @@ sequenceDiagram
     S->>DB: rate-limit check (GalleryAccessLog)
     S->>S: bcrypt compare
     S->>DB: log attempt
-    S-->>C: Set-Cookie (httpOnly, path=/gallery/:slug, short TTL)
+    S-->>C: Set-Cookie framelink_gallery_<slug> (httpOnly, slug-bound JWT, short TTL)
     C->>S: GET /api/gallery/:slug/photos?cursor
     S->>OS: createSignedUrls(keys)
     S-->>C: { photos: [signed thumbnail + preview URLs], nextCursor }
