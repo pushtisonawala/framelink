@@ -49,5 +49,26 @@ export async function GET() {
     steps.prismaUserCount = { error: String((e as Error)?.message), stack: (e as Error)?.stack };
   }
 
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const { signedUrls } = await import("@/lib/supabase");
+    const photo = await prisma.photo.findFirst({
+      where: { status: "READY", thumbnailKey: { not: null } },
+      select: { thumbnailKey: true },
+    });
+    if (!photo?.thumbnailKey) {
+      steps.storageSign = "no READY photo to test";
+    } else {
+      const urls = await signedUrls([photo.thumbnailKey], 60);
+      steps.storageSign = {
+        ok: true,
+        key: photo.thumbnailKey,
+        gotUrl: Boolean(urls[photo.thumbnailKey]),
+      };
+    }
+  } catch (e) {
+    steps.storageSign = { error: String((e as Error)?.message), stack: (e as Error)?.stack };
+  }
+
   return NextResponse.json({ node: process.version, steps });
 }
